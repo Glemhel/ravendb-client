@@ -11,6 +11,9 @@ using Raven.Client;
 using System.Diagnostics;
 using Raven.Client.Documents.BulkInsert;
 using Raven.Client.Documents.Conventions;
+using Raven.Client.Documents.Linq;
+using Raven.Client.Documents.Operations;
+using Raven.Client.Documents.Queries;
 
 namespace TestingRavenDB
 {
@@ -23,7 +26,7 @@ namespace TestingRavenDB
             stopwatch.Start();
             Console.WriteLine("Hello!");
             X509Certificate2 clientCertificate = new X509Certificate2("D:\\IT\\mrudakov.Cluster.Settings\\admin.client.certificate.mrudakov.pfx");
-            CountNumberOfPaymentsSmaller();
+            DeleteExample();
             stopwatch.Stop();
             TimeSpan ts = stopwatch.Elapsed;
             Console.WriteLine("Elapsed Time is {0:00}:{1:00}:{2:00}.{3}",
@@ -87,7 +90,8 @@ namespace TestingRavenDB
         {
             using (BulkInsertOperation bulkInsert = DocumentStoreHolder.Store.BulkInsert())
             {
-                for (int i = 0; i < 1000 * 1000; i++)
+                // insert bunches of data efficiently
+                for (int i = 0; i < 10000; i++)
                 {
                     bulkInsert.Store(new Language
                     {
@@ -98,6 +102,49 @@ namespace TestingRavenDB
 
                 }
             }
+        }
+
+        public static void UpdateExample()
+        {
+            using (IDocumentSession session = DocumentStoreHolder.Store.OpenSession())
+            {
+                // Query: find languages which name starts with 'SampleLanguage'
+                IRavenQueryable<Language> query = session.Query<Language>()
+                    .Where(x => x.Name.StartsWith("SampleLanguage"));
+
+                var result = query.ToList();
+
+                // Change all names to 'MarkedForDeletion'
+                for (var l = 0; l < result.Count; l++)
+                {
+                    result[l].Name = "MarkedForDeletion";
+                }
+
+                // Apply changes
+                session.SaveChanges();
+            }
+        }
+
+        public static void DeleteExample()
+        {
+            // simple query - to delete single entry
+            //var operation = DocumentStoreHolder.Store
+            //.Operations
+            //.Send(new DeleteByQueryOperation(new IndexQuery
+            //{
+            //    Query = "from Actor where startsWith(LastName, \"Rudakov\")"
+            //}));
+            //operation.WaitForCompletion(TimeSpan.FromSeconds(15));
+
+            // complex query - to delete bunch of data
+            var operation = DocumentStoreHolder.Store
+            .Operations
+            .Send(new DeleteByQueryOperation(new IndexQuery
+            {
+                Query = "from Language where Name = \"MarkedForDeletion\""
+            }));
+            operation.WaitForCompletion(TimeSpan.FromSeconds(20));
+            Console.WriteLine("Ok deleted");
         }
 
         public static void CreateSingleEntry()
