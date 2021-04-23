@@ -1,4 +1,5 @@
 ﻿using Raven.Client.Documents;
+using Raven.Client.Documents.Conventions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,7 +35,14 @@ namespace TestingRavenDB
                 Conventions =
             {
                 MaxNumberOfRequestsPerSession = 1000,
-                UseOptimisticConcurrency = true
+                UseOptimisticConcurrency = true,
+                FindCollectionName = type =>
+                {
+                    if (typeof(Language).IsAssignableFrom(type))
+                        return "Language";
+
+                    return DocumentConventions.DefaultGetCollectionName(type);
+                }
             },
 
                 // Define a default database (optional)
@@ -45,8 +53,8 @@ namespace TestingRavenDB
                     "D:\\IT\\mrudakov.Cluster.Settings\\admin.client.certificate.mrudakov.pfx"
                     ),
 
-                // Initialize the Document Store
-            }.Initialize();
+            // Initialize the Document Store
+        }.Initialize();
 
             return store;
         }
