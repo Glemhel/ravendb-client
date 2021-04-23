@@ -25,7 +25,6 @@ namespace TestingRavenDB
 
             stopwatch.Start();
             Console.WriteLine("Hello!");
-            X509Certificate2 clientCertificate = new X509Certificate2("D:\\IT\\mrudakov.Cluster.Settings\\admin.client.certificate.mrudakov.pfx");
             DeleteExample();
             stopwatch.Stop();
             TimeSpan ts = stopwatch.Elapsed;
