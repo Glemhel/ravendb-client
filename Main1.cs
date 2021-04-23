@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
 using Raven.Client;
+using System.Diagnostics;
 
 namespace TestingRavenDB
 {
@@ -15,6 +16,9 @@ namespace TestingRavenDB
     {
         public static void Main(string[] args)
         {
+            Stopwatch stopwatch = new Stopwatch();
+
+            stopwatch.Start();
             Console.WriteLine("Hello!");
             X509Certificate2 clientCertificate = new X509Certificate2("D:\\IT\\mrudakov.Cluster.Settings\\admin.client.certificate.mrudakov.pfx");
             using (IDocumentSession session = DocumentStoreHolder.Store.OpenSession())
@@ -82,7 +86,6 @@ namespace TestingRavenDB
                 int last = 0;
                 results.Reverse();
                 for (int i = 0; i < results.Count; i++) {
-                    Console.WriteLine(results[i].Amount);
                     var payment = results[i];
                     Rental rental = session.Load<Rental>(payment.Rental);
                     if (i > 0 && results[i].Amount > results[i - 1].Amount)
@@ -111,8 +114,12 @@ namespace TestingRavenDB
                     // send all pending operations to server, in this case only `Put` operation
                 }
                 session.SaveChanges();
-                Console.ReadLine();
             }
+            stopwatch.Stop();
+            TimeSpan ts = stopwatch.Elapsed;
+            Console.WriteLine("Elapsed Time is {0:00}:{1:00}:{2:00}.{3}",
+                            ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds);
+            Console.ReadLine();
         }
       
     }
