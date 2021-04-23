@@ -73,16 +73,44 @@ namespace TestingRavenDB
                 //Console.WriteLine(results.Count);
                 //Console.ReadLine();
 
-                // using Query
-                IList<Payment> results = session
+                // using Query with no index
+                List<Payment> results = session
                     .Query<Payment>(collectionName: "Payment")
                     .Include(x => x.Rental)
+                    .OrderByDescending(x => x.Amount)
                     .ToList();
-                foreach (Payment payment in results)
-                {
+                int last = 0;
+                results.Reverse();
+                for (int i = 0; i < results.Count; i++) {
+                    Console.WriteLine(results[i].Amount);
+                    var payment = results[i];
                     Rental rental = session.Load<Rental>(payment.Rental);
-                    Console.WriteLine("Result: {0}, {1}", payment.Id, rental.ReturnDate);
+                    if (i > 0 && results[i].Amount > results[i - 1].Amount)
+                        last = i;
+                    // writing data into a new collection
+                    PaymentRental entry = new PaymentRental
+                    {
+                        PaymentId = payment.Id,
+                        Amount = payment.Amount,
+                        PaymentDate = payment.PaymentDate,
+                        Staff = payment.Staff,
+                        Customer = payment.Customer,
+                        RentalId = rental.Id,
+                        RentalDate = rental.RentalDate,
+                        ReturnDate = rental.ReturnDate,
+                        LastUpdate = rental.LastUpdate,
+                        RentalStaff = rental.Staff,
+                        RentalCustomer = rental.Customer,
+                        Inventory = rental.Inventory,
+                        Count_smaller_pay = last
+                    };
+
+                    session.Store(entry);
+                    session.Advanced.GetMetadataFor(entry)[Constants.Documents.Metadata.Collection] = "PaymentRental";
+
+                    // send all pending operations to server, in this case only `Put` operation
                 }
+                session.SaveChanges();
                 Console.ReadLine();
             }
         }
